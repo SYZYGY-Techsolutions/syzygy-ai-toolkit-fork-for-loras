@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useRef } from 'react';
 import { apiClient } from '@/utils/api';
+import useVisibilityAwareInterval from './useVisibilityAwareInterval';
 
 interface FileObject {
   path: string;
@@ -36,19 +37,13 @@ export default function useFilesList(jobID: string, reloadInterval: null | numbe
       });
   };
 
+  // Initial load
   useEffect(() => {
     refreshFiles();
-
-    if (reloadInterval) {
-      const interval = setInterval(() => {
-        refreshFiles();
-      }, reloadInterval);
-
-      return () => {
-        clearInterval(interval);
-      };
-    }
   }, [jobID]);
+
+  // Set up visibility-aware polling
+  useVisibilityAwareInterval(refreshFiles, reloadInterval, [jobID]);
 
   return { files, setFiles, status, refreshFiles };
 }

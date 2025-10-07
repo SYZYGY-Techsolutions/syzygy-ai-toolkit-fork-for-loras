@@ -2,11 +2,7 @@
 
 import { useEffect, useState, useRef } from 'react';
 import { apiClient } from '@/utils/api';
-
-interface FileObject {
-  path: string;
-  size: number;
-}
+import useVisibilityAwareInterval from './useVisibilityAwareInterval';
 
 const clean = (text: string): string => {
   // remove \x1B[A\x1B[A
@@ -42,19 +38,13 @@ export default function useJobLog(jobID: string, reloadInterval: null | number =
       });
   };
 
+  // Initial load
   useEffect(() => {
     refresh();
-
-    if (reloadInterval) {
-      const interval = setInterval(() => {
-        refresh();
-      }, reloadInterval);
-
-      return () => {
-        clearInterval(interval);
-      };
-    }
   }, [jobID]);
+
+  // Set up visibility-aware polling
+  useVisibilityAwareInterval(refresh, reloadInterval, [jobID]);
 
   return { log, setLog, status, refresh };
 }

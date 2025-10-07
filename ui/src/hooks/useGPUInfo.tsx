@@ -3,6 +3,7 @@
 import { GPUApiResponse, GpuInfo } from '@/types';
 import { useEffect, useState } from 'react';
 import { apiClient } from '@/utils/api';
+import useVisibilityAwareInterval from './useVisibilityAwareInterval';
 
 export default function useGPUInfo(gpuIds: null | number[] = null, reloadInterval: null | number = null) {
   const [gpuList, setGpuList] = useState<GpuInfo[]>([]);
@@ -27,22 +28,13 @@ export default function useGPUInfo(gpuIds: null | number[] = null, reloadInterva
     }
   };
 
+  // Initial load
   useEffect(() => {
-    // Fetch immediately on component mount
     fetchGpuInfo();
+  }, [gpuIds]);
 
-    // Set up interval if specified
-    if (reloadInterval) {
-      const interval = setInterval(() => {
-        fetchGpuInfo();
-      }, reloadInterval);
-
-      // Cleanup interval on unmount
-      return () => {
-        clearInterval(interval);
-      };
-    }
-  }, [gpuIds, reloadInterval]); // Added dependencies
+  // Set up visibility-aware polling
+  useVisibilityAwareInterval(fetchGpuInfo, reloadInterval, [gpuIds]);
 
   return { gpuList, setGpuList, isGPUInfoLoaded, status, refreshGpuInfo: fetchGpuInfo };
 }

@@ -3,6 +3,7 @@ import { GPUApiResponse } from '@/types';
 import Loading from '@/components/Loading';
 import GPUWidget from '@/components/GPUWidget';
 import { apiClient } from '@/utils/api';
+import useVisibilityAwareInterval from '@/hooks/useVisibilityAwareInterval';
 
 const GpuMonitor: React.FC = () => {
   const [gpuData, setGpuData] = useState<GPUApiResponse | null>(null);
@@ -11,39 +12,36 @@ const GpuMonitor: React.FC = () => {
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const isFetchingGpuRef = useRef(false);
 
+  const fetchGpuInfo = async () => {
+    if (isFetchingGpuRef.current) {
+      return;
+    }
+    setLoading(true);
+    isFetchingGpuRef.current = true;
+    apiClient
+      .get('/api/gpu')
+      .then(res => res.data)
+      .then(data => {
+        setGpuData(data);
+        setLastUpdated(new Date());
+        setError(null);
+      })
+      .catch(err => {
+        setError(`Failed to fetch GPU data: ${err instanceof Error ? err.message : String(err)}`);
+      })
+      .finally(() => {
+        isFetchingGpuRef.current = false;
+        setLoading(false);
+      });
+  };
+
+  // Initial load
   useEffect(() => {
-    const fetchGpuInfo = async () => {
-      if (isFetchingGpuRef.current) {
-        return;
-      }
-      setLoading(true);
-      isFetchingGpuRef.current = true;
-      apiClient
-        .get('/api/gpu')
-        .then(res => res.data)
-        .then(data => {
-          setGpuData(data);
-          setLastUpdated(new Date());
-          setError(null);
-        })
-        .catch(err => {
-          setError(`Failed to fetch GPU data: ${err instanceof Error ? err.message : String(err)}`);
-        })
-        .finally(() => {
-          isFetchingGpuRef.current = false;
-          setLoading(false);
-        });
-    };
-
-    // Fetch immediately on component mount
     fetchGpuInfo();
-
-    // Set up interval to fetch every 1 seconds
-    const intervalId = setInterval(fetchGpuInfo, 1000);
-
-    // Clean up interval on component unmount
-    return () => clearInterval(intervalId);
   }, []);
+
+  // Set up visibility-aware polling every 1 second
+  useVisibilityAwareInterval(fetchGpuInfo, 1000, []);
 
   const getGridClasses = (gpuCount: number): string => {
     switch (gpuCount) {

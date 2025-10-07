@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { Job } from '@prisma/client';
 import { apiClient } from '@/utils/api';
+import useVisibilityAwareInterval from './useVisibilityAwareInterval';
 
 export default function useJob(jobID: string, reloadInterval: null | number = null) {
   const [job, setJob] = useState<Job | null>(null);
@@ -24,19 +25,13 @@ export default function useJob(jobID: string, reloadInterval: null | number = nu
       });
   };
 
+  // Initial load
   useEffect(() => {
     refreshJob();
-
-    if (reloadInterval) {
-      const interval = setInterval(() => {
-        refreshJob();
-      }, reloadInterval);
-
-      return () => {
-        clearInterval(interval);
-      };
-    }
   }, [jobID]);
+
+  // Set up visibility-aware polling
+  useVisibilityAwareInterval(refreshJob, reloadInterval, [jobID]);
 
   return { job, setJob, status, refreshJob };
 }

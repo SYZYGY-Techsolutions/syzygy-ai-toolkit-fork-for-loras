@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { apiClient } from '@/utils/api';
+import useVisibilityAwareInterval from './useVisibilityAwareInterval';
 
 export default function useSampleImages(jobID: string, reloadInterval: null | number = null) {
   const [sampleImages, setSampleImages] = useState<string[]>([]);
@@ -25,19 +26,13 @@ export default function useSampleImages(jobID: string, reloadInterval: null | nu
       });
   };
 
+  // Initial load
   useEffect(() => {
     refreshSampleImages();
-
-    if (reloadInterval) {
-      const interval = setInterval(() => {
-        refreshSampleImages();
-      }, reloadInterval);
-
-      return () => {
-        clearInterval(interval);
-      };
-    }
   }, [jobID]);
+
+  // Set up visibility-aware polling
+  useVisibilityAwareInterval(refreshSampleImages, reloadInterval, [jobID]);
 
   return { sampleImages, setSampleImages, status, refreshSampleImages };
 }
