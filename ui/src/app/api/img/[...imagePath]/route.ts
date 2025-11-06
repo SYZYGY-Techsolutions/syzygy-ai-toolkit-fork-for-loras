@@ -9,7 +9,7 @@ export async function GET(request: NextRequest, { params }: { params: { imagePat
   try {
     // Decode the path
     console.log('Received imagePath param:', imagePath);
-    const filepath = decodeURIComponent(Array.isArray(imagePath) ? imagePath.join('/') : imagePath);
+    const filepath = decodeURIComponent(Array.isArray(imagePath) ? `/${imagePath.join('/')}` : imagePath);
 
     // Get allowed directories
     const datasetRoot = await getDatasetsRoot();
