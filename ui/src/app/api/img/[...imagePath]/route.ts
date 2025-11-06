@@ -33,7 +33,8 @@ export async function GET(request: NextRequest, { params }: { params: { imagePat
   const { imagePath } = await params;
   try {
     // Decode the path
-    const filepath = decodeURIComponent(imagePath);
+    console.log('Received imagePath param:', imagePath);
+    const filepath = decodeURIComponent(Array.isArray(imagePath) ? imagePath.join('/') : imagePath);
 
     // Get allowed directories
     const datasetRoot = await getDatasetsRoot();
